@@ -1,11 +1,512 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
   <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>책 검색</title>
+    <style>
+      :root {
+        --bg: #f7f5f0;
+        --card: #fff;
+        --ink: #24221e;
+        --sub: #6d685f;
+        --line: #e6e1d6;
+        --accent: #2f6b4f;
+        --accent-soft: #e3efe8;
+        --warn: #9a5b12;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family:
+          "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui,
+          sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        line-height: 1.55;
+      }
+      .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 28px 20px 60px;
+      }
+      header h1 {
+        margin: 0 0 4px;
+        font-size: 28px;
+      }
+      header p {
+        margin: 0;
+        color: var(--sub);
+      }
+      section {
+        margin-top: 28px;
+      }
+      h2 {
+        font-size: 20px;
+        margin: 0 0 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .notice {
+        background: #fff7e8;
+        border: 1px solid #f0d9ae;
+        color: var(--warn);
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-size: 14px;
+        margin-top: 18px;
+      }
+
+      /* 검색 */
+      form.search {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      form.search select,
+      form.search input {
+        font: inherit;
+        padding: 11px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+      }
+      form.search input {
+        flex: 1;
+        min-width: 200px;
+      }
+      button {
+        font: inherit;
+        cursor: pointer;
+        border: 0;
+        border-radius: 10px;
+        padding: 11px 18px;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 600;
+      }
+      button.ghost {
+        background: #fff;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      .meta {
+        color: var(--sub);
+        font-size: 14px;
+        margin: 12px 0;
+      }
+
+      /* 카드 */
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: 16px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow: hidden;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        transition:
+          transform 0.12s,
+          box-shadow 0.12s;
+        text-align: left;
+        padding: 0;
+        color: inherit;
+        font-weight: 400;
+      }
+      .card:hover,
+      .card:focus-visible {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+      }
+      .cover {
+        aspect-ratio: 3/4;
+        background: var(--accent-soft);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .cover .ph {
+        font-size: 13px;
+        color: var(--accent);
+        padding: 12px;
+        text-align: center;
+        font-weight: 600;
+      }
+      .info {
+        padding: 10px 12px 14px;
+      }
+      .info .t {
+        font-weight: 700;
+        font-size: 15px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .info .a {
+        color: var(--sub);
+        font-size: 13px;
+        margin-top: 4px;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .empty,
+      .loading,
+      .error {
+        color: var(--sub);
+        padding: 20px 0;
+      }
+      .error {
+        color: #b3261e;
+      }
+      .more {
+        text-align: center;
+        margin-top: 18px;
+      }
+
+      /* 상세 */
+      dialog {
+        border: 0;
+        border-radius: 16px;
+        max-width: 640px;
+        width: calc(100% - 32px);
+        padding: 0;
+      }
+      dialog::backdrop {
+        background: rgba(0, 0, 0, 0.45);
+      }
+      .detail {
+        display: flex;
+        gap: 18px;
+        padding: 22px;
+      }
+      .detail .cover {
+        width: 140px;
+        flex: none;
+        border-radius: 10px;
+      }
+      .detail h3 {
+        margin: 0 0 6px;
+        font-size: 20px;
+      }
+      .detail dl {
+        margin: 10px 0 0;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 4px 12px;
+        font-size: 14px;
+      }
+      .detail dt {
+        color: var(--sub);
+      }
+      .detail dd {
+        margin: 0;
+      }
+      .detail .desc {
+        margin-top: 12px;
+        font-size: 14px;
+        white-space: pre-line;
+        max-height: 220px;
+        overflow: auto;
+      }
+      .dialog-foot {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 0 22px 20px;
+      }
+      .dialog-foot a {
+        color: var(--accent);
+        font-size: 14px;
+        align-self: center;
+        margin-right: auto;
+      }
+      @media (max-width: 560px) {
+        .detail {
+          flex-direction: column;
+        }
+        .detail .cover {
+          width: 120px;
+        }
+      }
+      footer {
+        margin-top: 50px;
+        color: var(--sub);
+        font-size: 13px;
+      }
+    </style>
   </head>
   <body>
-    <h1>Hello World</h1>
+    <div class="wrap">
+      <header>
+        <h1>📚 우리 반 책방</h1>
+        <p>읽고 싶은 책을 제목, 저자, 출판사, ISBN으로 찾아보세요.</p>
+        <div class="notice" id="demoNotice" hidden>
+          지금은 <b>예시 화면</b>이에요. 아래 코드의 <code>API_URL</code>에 Apps
+          Script 웹 앱 주소를 넣으면 실제 책 정보가 나와요.
+        </div>
+      </header>
+
+      <!-- 책 검색 -->
+      <section aria-labelledby="searchTitle">
+        <h2 id="searchTitle">🔍 책 검색</h2>
+        <form class="search" id="searchForm">
+          <select id="searchType" aria-label="검색 기준">
+            <option value="title">제목</option>
+            <option value="author">저자</option>
+            <option value="publisher">출판사</option>
+            <option value="isbn">ISBN</option>
+          </select>
+          <input
+            id="searchInput"
+            type="search"
+            placeholder="책 제목을 입력하세요"
+            aria-label="검색어"
+            required
+          />
+          <button type="submit">검색</button>
+        </form>
+        <div class="meta" id="searchMeta"></div>
+        <div id="searchList" class="grid" aria-live="polite"></div>
+        <div class="more">
+          <button class="ghost" id="moreBtn" hidden>더 보기</button>
+        </div>
+      </section>
+
+      <footer>책 정보 제공: 국립중앙도서관 Open API (ISBN 서지정보)</footer>
+    </div>
+
+    <dialog id="detail">
+      <div class="detail">
+        <div class="cover" id="dCover"></div>
+        <div style="flex: 1; min-width: 0">
+          <h3 id="dTitle"></h3>
+          <div id="dAuthor" style="color: var(--sub)"></div>
+          <dl id="dMeta"></dl>
+          <div class="desc" id="dDesc"></div>
+        </div>
+      </div>
+      <div class="dialog-foot">
+        <a id="dLink" href="#" target="_blank" rel="noopener" hidden
+          >책소개 자세히 보기 ↗</a
+        >
+        <button id="dClose">닫기</button>
+      </div>
+    </dialog>
+
+    <script>
+      /* ====== 설정: Apps Script 웹 앱 주소를 여기에 붙여넣으세요 ====== */
+      const API_URL =
+        "https://script.google.com/macros/s/AKfycbxaHvQ62ed_QogB9SY_uvNHp3XdiJoTGN6tVivnjJIn1Say3Ty2tu-0bWYNMtUxj6bG6A/exec"; // 예: "https://script.google.com/macros/s/XXXX/exec"
+      /* ================================================================== */
+
+      const $ = (id) => document.getElementById(id);
+      const esc = (s) =>
+        String(s ?? "").replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[c],
+        );
+
+      /* 예시 데이터 (API_URL이 비어 있을 때만 사용, 실제 책 아님) */
+      const DEMO = [
+        {
+          title: "예시 책 제목 1",
+          author: "예시 저자",
+          publisher: "예시 출판사",
+          intro: "API를 연결하면 이 자리에 실제 책 소개가 나옵니다.",
+        },
+        {
+          title: "예시 책 제목 2",
+          author: "예시 저자",
+          publisher: "예시 출판사",
+          intro: "카드를 누르면 이렇게 상세 정보 창이 열립니다.",
+        },
+        {
+          title: "예시 책 제목 3",
+          author: "예시 저자",
+          publisher: "예시 출판사",
+          intro: "",
+        },
+        {
+          title: "예시 책 제목 4",
+          author: "예시 저자",
+          publisher: "예시 출판사",
+          intro: "",
+        },
+      ];
+
+      async function callApi(params) {
+        if (!API_URL) {
+          await new Promise((r) => setTimeout(r, 300));
+          return { ok: true, total: DEMO.length, books: DEMO };
+        }
+        const url = API_URL + "?" + new URLSearchParams(params).toString();
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || "알 수 없는 오류");
+        return data;
+      }
+
+      function coverHtml(b) {
+        const ph = `<span class="ph">${esc(b.title || "표지 없음")}</span>`;
+        if (!b.cover) return ph;
+        return `<img src="${esc(b.cover)}" alt="" loading="lazy" referrerpolicy="no-referrer"
+           onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph',textContent:this.dataset.t}))"
+           data-t="${esc(b.title || "표지 없음")}">`;
+      }
+
+      function renderCards(container, books, append = false) {
+        const html = books
+          .map(
+            (b, i) => `
+    <button class="card" type="button" data-i="${i}">
+      <div class="cover">${coverHtml(b)}</div>
+      <div class="info">
+        <div class="t">${esc(b.title)}</div>
+        <div class="a">${esc(b.author)}</div>
+      </div>
+    </button>`,
+          )
+          .join("");
+        if (append) container.insertAdjacentHTML("beforeend", html);
+        else container.innerHTML = html;
+      }
+
+      function openDetail(b) {
+        $("dCover").innerHTML = coverHtml(b);
+        $("dTitle").textContent = b.title || "";
+        $("dAuthor").textContent = [b.author, b.publisher]
+          .filter(Boolean)
+          .join(" · ");
+        const rows = [
+          ["ISBN", b.isbn],
+          ["발행일", fmtDate(b.date)],
+          ["쪽수", b.page],
+          ["가격", b.price ? Number(b.price).toLocaleString() + "원" : ""],
+          ["분류", b.subject],
+        ].filter(([, v]) => v);
+        $("dMeta").innerHTML = rows
+          .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`)
+          .join("");
+        $("dDesc").textContent = b.intro || "";
+        const link = $("dLink");
+        if (b.introUrl) {
+          link.href = b.introUrl;
+          link.hidden = false;
+        } else link.hidden = true;
+        $("detail").showModal();
+      }
+      function fmtDate(d) {
+        return /^\d{8}$/.test(d || "")
+          ? `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6)}`
+          : d || "";
+      }
+
+      $("dClose").onclick = () => $("detail").close();
+      $("detail").addEventListener("click", (e) => {
+        if (e.target === $("detail")) $("detail").close();
+      });
+
+      /* ---------- 검색 ---------- */
+      let searchBooks = [],
+        searchState = { type: "title", q: "", page: 1, total: 0 };
+      const placeholders = {
+        title: "책 제목을 입력하세요",
+        author: "저자 이름을 입력하세요",
+        publisher: "출판사 이름을 입력하세요",
+        isbn: "ISBN 숫자를 입력하세요",
+      };
+      $("searchType").onchange = (e) =>
+        ($("searchInput").placeholder = placeholders[e.target.value]);
+
+      async function runSearch(append = false) {
+        const list = $("searchList"),
+          more = $("moreBtn");
+        if (!append) {
+          list.innerHTML = `<div class="loading">검색 중…</div>`;
+          searchBooks = [];
+        }
+        more.disabled = true;
+        try {
+          const data = await callApi({
+            action: "search",
+            type: searchState.type,
+            q: searchState.q,
+            page: searchState.page,
+            size: 12,
+          });
+          searchState.total = data.total || 0;
+          const start = searchBooks.length;
+          searchBooks = searchBooks.concat(data.books || []);
+          if (!searchBooks.length) {
+            list.innerHTML = `<div class="empty">검색 결과가 없어요. 다른 검색어로 찾아보세요.</div>`;
+          } else if (append) {
+            renderCards(list, data.books || [], true);
+            [...list.children]
+              .slice(start)
+              .forEach((el, k) => (el.dataset.i = start + k));
+          } else {
+            renderCards(list, searchBooks);
+          }
+          $("searchMeta").textContent = searchBooks.length
+            ? `“${searchState.q}” 검색 결과 ${searchState.total.toLocaleString()}건`
+            : "";
+          more.hidden = !(API_URL && searchBooks.length < searchState.total);
+        } catch (e) {
+          list.innerHTML = `<div class="error">검색하지 못했어요: ${esc(e.message)}</div>`;
+          more.hidden = true;
+        } finally {
+          more.disabled = false;
+        }
+      }
+      $("searchForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        searchState = {
+          type: $("searchType").value,
+          q: $("searchInput").value.trim(),
+          page: 1,
+          total: 0,
+        };
+        if (searchState.q) runSearch();
+      });
+      $("moreBtn").onclick = () => {
+        searchState.page++;
+        runSearch(true);
+      };
+      $("searchList").addEventListener("click", (e) => {
+        const c = e.target.closest(".card");
+        if (c) openDetail(searchBooks[c.dataset.i]);
+      });
+
+      /* 시작 */
+      if (!API_URL) $("demoNotice").hidden = false;
+    </script>
   </body>
 </html>
